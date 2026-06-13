@@ -716,241 +716,241 @@ def show_device_status(devices_type, device_name, if_field=False):
         display_devices("Other %s devices" % device_name, no_drv, extra_param)
 
 
-def show_status():
-    '''Function called when the script is passed the "--status" option.
-    Displays to the user what devices are bound to the igb_uio driver, the
-    kernel driver or to no driver'''
+# def show_status():
+#     '''Function called when the script is passed the "--status" option.
+#     Displays to the user what devices are bound to the igb_uio driver, the
+#     kernel driver or to no driver'''
 
-    if status_dev in ["net", "all"]:
-        show_device_status(network_devices, "Network", if_field=True)
+#     if status_dev in ["net", "all"]:
+#         show_device_status(network_devices, "Network", if_field=True)
 
-    if status_dev in ["baseband", "all"]:
-        show_device_status(baseband_devices, "Baseband")
+#     if status_dev in ["baseband", "all"]:
+#         show_device_status(baseband_devices, "Baseband")
 
-    if status_dev in ["crypto", "all"]:
-        show_device_status(crypto_devices, "Crypto")
+#     if status_dev in ["crypto", "all"]:
+#         show_device_status(crypto_devices, "Crypto")
 
-    if status_dev in ["dma", "all"]:
-        show_device_status(dma_devices, "DMA")
+#     if status_dev in ["dma", "all"]:
+#         show_device_status(dma_devices, "DMA")
 
-    if status_dev in ["event", "all"]:
-        show_device_status(eventdev_devices, "Eventdev")
+#     if status_dev in ["event", "all"]:
+#         show_device_status(eventdev_devices, "Eventdev")
 
-    if status_dev in ["mempool", "all"]:
-        show_device_status(mempool_devices, "Mempool")
+#     if status_dev in ["mempool", "all"]:
+#         show_device_status(mempool_devices, "Mempool")
 
-    if status_dev in ["compress", "all"]:
-        show_device_status(compress_devices, "Compress")
+#     if status_dev in ["compress", "all"]:
+#         show_device_status(compress_devices, "Compress")
 
-    if status_dev in ["misc", "all"]:
-        show_device_status(misc_devices, "Misc (rawdev)")
+#     if status_dev in ["misc", "all"]:
+#         show_device_status(misc_devices, "Misc (rawdev)")
 
-    if status_dev in ["regex", "all"]:
-        show_device_status(regex_devices, "Regex")
+#     if status_dev in ["regex", "all"]:
+#         show_device_status(regex_devices, "Regex")
 
-    if status_dev in ["ml", "all"]:
-        show_device_status(ml_devices, "ML")
-
-
-def pci_glob(arg):
-    '''Returns a list containing either:
-    * List of PCI B:D:F matching arg, using shell wildcards e.g. 80:04.*
-    * Only the passed arg if matching list is empty'''
-    sysfs_path = "/sys/bus/pci/devices"
-    for _glob in [arg, '0000:' + arg]:
-        paths = [basename(path) for path in glob(path_join(sysfs_path, _glob))]
-        if paths:
-            return paths
-    return [arg]
+#     if status_dev in ["ml", "all"]:
+#         show_device_status(ml_devices, "ML")
 
 
-def parse_args():
-    '''Parses the command-line arguments given by the user and takes the
-    appropriate action for each'''
-    global b_flag
-    global status_flag
-    global status_dev
-    global force_flag
-    global noiommu_flag
-    global args
-    global vfio_uid
-    global vfio_gid
+# def pci_glob(arg):
+#     '''Returns a list containing either:
+#     * List of PCI B:D:F matching arg, using shell wildcards e.g. 80:04.*
+#     * Only the passed arg if matching list is empty'''
+#     sysfs_path = "/sys/bus/pci/devices"
+#     for _glob in [arg, '0000:' + arg]:
+#         paths = [basename(path) for path in glob(path_join(sysfs_path, _glob))]
+#         if paths:
+#             return paths
+#     return [arg]
 
-    epilog_linux = """
-Examples:
----------
+# # 
+# def parse_args():
+#     '''Parses the command-line arguments given by the user and takes the
+#     appropriate action for each'''
+#     global b_flag
+#     global status_flag
+#     global status_dev
+#     global force_flag
+#     global noiommu_flag
+#     global args
+#     global vfio_uid
+#     global vfio_gid
 
-To display current device status:
-        %(prog)s --status
+#     epilog_linux = """
+# Examples:
+# ---------
 
-To display current network device status:
-        %(prog)s --status-dev net
+# To display current device status:
+#         %(prog)s --status
 
-To bind eth1 from the current driver and move to use vfio-pci
-        %(prog)s --bind=vfio-pci eth1
+# To display current network device status:
+#         %(prog)s --status-dev net
 
-To unbind 0000:01:00.0 from using any driver
-        %(prog)s -u 0000:01:00.0
+# To bind eth1 from the current driver and move to use vfio-pci
+#         %(prog)s --bind=vfio-pci eth1
 
-To bind 0000:02:00.0 and 0000:02:00.1 to the ixgbe kernel driver
-        %(prog)s -b ixgbe 02:00.0 02:00.1
-"""
-    epilog_bsd = """
-NOTE: Only query options, -s/--status and --status-dev, are supported on FreeBSD.
-"""
+# To unbind 0000:01:00.0 from using any driver
+#         %(prog)s -u 0000:01:00.0
 
-    epilog = epilog_linux if is_linux else epilog_bsd
-    parser = argparse.ArgumentParser(
-        description='Utility to bind and unbind devices from OS kernel',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=epilog)
+# To bind 0000:02:00.0 and 0000:02:00.1 to the ixgbe kernel driver
+#         %(prog)s -b ixgbe 02:00.0 02:00.1
+# """
+#     epilog_bsd = """
+# NOTE: Only query options, -s/--status and --status-dev, are supported on FreeBSD.
+# """
 
-    parser.add_argument(
-        '-s',
-        '--status',
-        action='store_true',
-        help="Print the current status of all known devices.")
-    parser.add_argument(
-        '--status-dev',
-        help="Print the status of given device group.",
-        choices=['baseband', 'compress', 'crypto', 'dma', 'event',
-                 'mempool', 'misc', 'net', 'regex', 'ml'])
-    bind_group = parser.add_mutually_exclusive_group()
-    bind_group.add_argument(
-        '-b',
-        '--bind',
-        metavar='DRIVER',
-        help="Select the driver to use or \"none\" to unbind the device")
-    bind_group.add_argument(
-        '-u',
-        '--unbind',
-        action='store_true',
-        help="Unbind a device (equivalent to \"-b none\")")
-    parser.add_argument(
-        '--noiommu-mode',
-        action='store_true',
-        help="If IOMMU is not available, enable no IOMMU mode for VFIO drivers")
-    parser.add_argument(
-        "-U",
-        "--uid",
-        help="For VFIO, specify the UID to set IOMMU group ownership",
-        type=lambda u: pwd.getpwnam(u).pw_uid,
-        default=-1,
-    )
-    parser.add_argument(
-        "-G",
-        "--gid",
-        help="For VFIO, specify the GID to set IOMMU group ownership",
-        type=lambda g: grp.getgrnam(g).gr_gid,
-        default=-1,
-    )
-    parser.add_argument(
-        '--force',
-        action='store_true',
-        help="""
-Override restriction on binding devices in use by Linux"
-WARNING: This can lead to loss of network connection and should be used with caution.
-""")
-    parser.add_argument(
-        'devices',
-        metavar='DEVICE',
-        nargs='*',
-        help="""
-Device specified as PCI "domain:bus:slot.func" syntax or "bus:slot.func" syntax.
-For devices bound to Linux kernel drivers, they may be referred to by interface name.
-""")
+#     epilog = epilog_linux if is_linux else epilog_bsd
+#     parser = argparse.ArgumentParser(
+#         description='Utility to bind and unbind devices from OS kernel',
+#         formatter_class=argparse.RawDescriptionHelpFormatter,
+#         epilog=epilog)
 
-    opt = parser.parse_args()
+#     parser.add_argument(
+#         '-s',
+#         '--status',
+#         action='store_true',
+#         help="Print the current status of all known devices.")
+#     parser.add_argument(
+#         '--status-dev',
+#         help="Print the status of given device group.",
+#         choices=['baseband', 'compress', 'crypto', 'dma', 'event',
+#                  'mempool', 'misc', 'net', 'regex', 'ml'])
+#     bind_group = parser.add_mutually_exclusive_group()
+#     bind_group.add_argument(
+#         '-b',
+#         '--bind',
+#         metavar='DRIVER',
+#         help="Select the driver to use or \"none\" to unbind the device")
+#     bind_group.add_argument(
+#         '-u',
+#         '--unbind',
+#         action='store_true',
+#         help="Unbind a device (equivalent to \"-b none\")")
+#     parser.add_argument(
+#         '--noiommu-mode',
+#         action='store_true',
+#         help="If IOMMU is not available, enable no IOMMU mode for VFIO drivers")
+#     parser.add_argument(
+#         "-U",
+#         "--uid",
+#         help="For VFIO, specify the UID to set IOMMU group ownership",
+#         type=lambda u: pwd.getpwnam(u).pw_uid,
+#         default=-1,
+#     )
+#     parser.add_argument(
+#         "-G",
+#         "--gid",
+#         help="For VFIO, specify the GID to set IOMMU group ownership",
+#         type=lambda g: grp.getgrnam(g).gr_gid,
+#         default=-1,
+#     )
+#     parser.add_argument(
+#         '--force',
+#         action='store_true',
+#         help="""
+# Override restriction on binding devices in use by Linux"
+# WARNING: This can lead to loss of network connection and should be used with caution.
+# """)
+#     parser.add_argument(
+#         'devices',
+#         metavar='DEVICE',
+#         nargs='*',
+#         help="""
+# Device specified as PCI "domain:bus:slot.func" syntax or "bus:slot.func" syntax.
+# For devices bound to Linux kernel drivers, they may be referred to by interface name.
+# """)
 
-    if opt.status_dev:
-        status_flag = True
-        status_dev = opt.status_dev
-    if opt.status:
-        status_flag = True
-        status_dev = "all"
-    if opt.force:
-        force_flag = True
-    if opt.noiommu_mode:
-        noiommu_flag = True
-    if opt.bind:
-        b_flag = opt.bind
-    elif opt.unbind:
-        b_flag = "none"
-    vfio_uid = opt.uid
-    vfio_gid = opt.gid
-    args = opt.devices
+#     opt = parser.parse_args()
 
-    if not b_flag and not status_flag:
-        print("Error: No action specified for devices. "
-              "Please give a --bind, --ubind or --status option",
-              file=sys.stderr)
-        parser.print_usage()
-        sys.exit(1)
+#     if opt.status_dev:
+#         status_flag = True
+#         status_dev = opt.status_dev
+#     if opt.status:
+#         status_flag = True
+#         status_dev = "all"
+#     if opt.force:
+#         force_flag = True
+#     if opt.noiommu_mode:
+#         noiommu_flag = True
+#     if opt.bind:
+#         b_flag = opt.bind
+#     elif opt.unbind:
+#         b_flag = "none"
+#     vfio_uid = opt.uid
+#     vfio_gid = opt.gid
+#     args = opt.devices
 
-    if b_flag and not args:
-        print("Error: No devices specified.", file=sys.stderr)
-        parser.print_usage()
-        sys.exit(1)
+#     if not b_flag and not status_flag:
+#         print("Error: No action specified for devices. "
+#               "Please give a --bind, --ubind or --status option",
+#               file=sys.stderr)
+#         parser.print_usage()
+#         sys.exit(1)
 
-    # resolve any PCI globs in the args
-    new_args = []
-    for arg in args:
-        new_args.extend(pci_glob(arg))
-    args = new_args
+#     if b_flag and not args:
+#         print("Error: No devices specified.", file=sys.stderr)
+#         parser.print_usage()
+#         sys.exit(1)
 
-
-def do_arg_actions():
-    '''do the actual action requested by the user'''
-    global b_flag
-    global status_flag
-    global force_flag
-    global args
-
-    if b_flag in ["none", "None"]:
-        unbind_all(args, force_flag)
-    elif b_flag is not None:
-        bind_all(args, b_flag, force_flag)
-    if status_flag:
-        if b_flag is not None:
-            clear_data()
-            # refresh if we have changed anything
-            get_device_details(network_devices)
-            get_device_details(baseband_devices)
-            get_device_details(crypto_devices)
-            get_device_details(dma_devices)
-            get_device_details(eventdev_devices)
-            get_device_details(mempool_devices)
-            get_device_details(compress_devices)
-            get_device_details(regex_devices)
-            get_device_details(ml_devices)
-            get_device_details(misc_devices)
-        show_status()
+#     # resolve any PCI globs in the args
+#     new_args = []
+#     for arg in args:
+#         new_args.extend(pci_glob(arg))
+#     args = new_args
 
 
-def main():
-    '''program main function'''
-    # check if lspci/pciconf is installed, suppress any output
-    pcitool = 'lspci' if is_linux else 'pciconf'
-    with open(os.devnull, 'w') as devnull:
-        ret = subprocess.call(['which', pcitool],
-                              stdout=devnull, stderr=devnull)
-        if ret != 0:
-            sys.exit(f"'{pcitool}' not found - please install relevant package, e.g. 'pciutils'")
-    parse_args()
-    check_modules()
-    clear_data()
-    get_device_details(network_devices)
-    get_device_details(baseband_devices)
-    get_device_details(crypto_devices)
-    get_device_details(dma_devices)
-    get_device_details(eventdev_devices)
-    get_device_details(mempool_devices)
-    get_device_details(compress_devices)
-    get_device_details(regex_devices)
-    get_device_details(ml_devices)
-    get_device_details(misc_devices)
-    do_arg_actions()
+# def do_arg_actions():
+#     '''do the actual action requested by the user'''
+#     global b_flag
+#     global status_flag
+#     global force_flag
+#     global args
+
+#     if b_flag in ["none", "None"]:
+#         unbind_all(args, force_flag)
+#     elif b_flag is not None:
+#         bind_all(args, b_flag, force_flag)
+#     if status_flag:
+#         if b_flag is not None:
+#             clear_data()
+#             # refresh if we have changed anything
+#             get_device_details(network_devices)
+#             get_device_details(baseband_devices)
+#             get_device_details(crypto_devices)
+#             get_device_details(dma_devices)
+#             get_device_details(eventdev_devices)
+#             get_device_details(mempool_devices)
+#             get_device_details(compress_devices)
+#             get_device_details(regex_devices)
+#             get_device_details(ml_devices)
+#             get_device_details(misc_devices)
+#         show_status()
 
 
-if __name__ == "__main__":
-    main()
+# def main():
+#     '''program main function'''
+#     # check if lspci/pciconf is installed, suppress any output
+#     pcitool = 'lspci' if is_linux else 'pciconf'
+#     with open(os.devnull, 'w') as devnull:
+#         ret = subprocess.call(['which', pcitool],
+#                               stdout=devnull, stderr=devnull)
+#         if ret != 0:
+#             sys.exit(f"'{pcitool}' not found - please install relevant package, e.g. 'pciutils'")
+#     parse_args()
+#     check_modules()
+#     clear_data()
+#     get_device_details(network_devices)
+#     get_device_details(baseband_devices)
+#     get_device_details(crypto_devices)
+#     get_device_details(dma_devices)
+#     get_device_details(eventdev_devices)
+#     get_device_details(mempool_devices)
+#     get_device_details(compress_devices)
+#     get_device_details(regex_devices)
+#     get_device_details(ml_devices)
+#     get_device_details(misc_devices)
+#     do_arg_actions()
+
+
+# if __name__ == "__main__":
+#     main()
