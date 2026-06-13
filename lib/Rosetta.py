@@ -76,10 +76,10 @@ show = Cmd2ArgumentParser()
 show_sb = show.add_subparsers(dest="command", help="Команда вывода системной информации")
 
 # show candiidate config
-show_candiidate = show_sb.add_parser("candiidate").add_argument("candiidate", type=str, choices=["config"])
+show_candidate = show_sb.add_parser("candidate", help="").add_argument("config", type=str, choices=["config"])
 
-# show running config
-show_running = show_sb.add_parser("running").add_argument("running", type=str, choices=["config"])
+# # show running config
+# show_running = show_sb.add_parser("running").add_argument("config", type=str, choices=["config"])
 
 # show datapath hardware
-show_datapath = show_sb.add_parser("datapath").add_argument("datapath", type=str, choices=["hardware"])
+show_datapath = show_sb.add_parser("datapath", help="").add_argument("hardware", type=str, choices=["hardware"])
