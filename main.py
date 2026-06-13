@@ -348,7 +348,11 @@ class Cli(cmd2.Cmd):
                 print("Не указан драйвер NIC")
                 return
 
-            Cartouche.bind_all([interface_dict["pci address"]], interface_dict["driver"], force=False)
+            # Cartouche.bind_all([interface_dict["pci address"]], interface_dict["driver"], force=False)
+            try:
+                Cartouche.bind_all([interface_dict["pci address"]], interface_dict["driver"], force=False)
+            except SystemExit as e:
+                print(f"Ошибка bind: {e}")
 
     def do_unbind(self, arg):
         if "interface" in self.context:
