@@ -1,5 +1,6 @@
 import cmd2
 import lib.Rosetta as Rosetta
+import lib.Cartouche as Cartouche
 from pprint import pprint
 
 
@@ -48,28 +49,86 @@ class Cli(cmd2.Cmd):
 
         return "\n".join(lines)
 
+    @cmd2.with_argparser(Rosetta.show)
     def do_show(self, arg):
-        if not self.candidate_configuration.get("tests"):
-            print("Конфигурация пуста")
-            return
+        match arg.command:
+            case "candiidate":
+                if arg.config:
+                    if not self.candidate_configuration.get("tests"):
+                        print("Конфигурация пуста")
+                        return
 
-        if "stream" in self.context and self.current_test_id and self.current_stream_id:
-            test_key = f"test {self.current_test_id}"
-            stream_key = f"stream {self.current_stream_id}"
-            try:
-                target_data = {test_key: {"streams": {stream_key: self.get_current_stream()}}}
-                print(self.format_config(target_data))
-            except KeyError:
-                print(self.format_config(self.candidate_configuration))
-        elif "test" in self.context and self.current_test_id:
-            test_key = f"test {self.current_test_id}"
-            try:
-                target_data = {test_key: self.candidate_configuration["tests"][test_key]}
-                print(self.format_config(target_data))
-            except KeyError:
-                print(self.format_config(self.candidate_configuration))
-        else:
-            print(self.format_config(self.candidate_configuration))
+                    if "stream" in self.context and self.current_test_id and self.current_stream_id:
+                        test_key = f"test {self.current_test_id}"
+                        stream_key = f"stream {self.current_stream_id}"
+                        try:
+                            target_data = {test_key: {"streams": {stream_key: self.get_current_stream()}}}
+                            print(self.format_config(target_data))
+                        except KeyError:
+                            print(self.format_config(self.candidate_configuration))
+                    elif "test" in self.context and self.current_test_id:
+                        test_key = f"test {self.current_test_id}"
+                        try:
+                            target_data = {test_key: self.candidate_configuration["tests"][test_key]}
+                            print(self.format_config(target_data))
+                        except KeyError:
+                            print(self.format_config(self.candidate_configuration))
+                    else:
+                        print(self.format_config(self.candidate_configuration))
+
+            case "running":
+                if arg.config:
+                    pass
+
+            case "datapath":
+                match arg.datapath:
+                    case "hardware":
+                        """Собирает данные из словаря DPDK и выводит вашу таблицу"""
+
+                        # Обновляем состояние устройств
+                        Cartouche.check_modules()
+                        Cartouche.get_device_details(Cartouche.network_devices)
+
+                        header = "{:<13} | {:<9} | {:<32} | {:<11} | {:<16}".format(
+                            "PCI Address", "Kernel If", "Description", "Driver", "Owner"
+                        )
+                        separator = "=" * len(header)
+
+                        print(separator)
+                        print(header)
+                        print(separator)
+
+                        # Фильтруем только сетевые устройства (Class начинается с '02')
+                        net_devices = [d for d in Cartouche.devices.values() if d.get("Class", "").startswith("02")]
+                        # Сортируем по PCI-слоту
+                        net_devices.sort(key=lambda x: x["Slot"])
+
+                        for d in net_devices:
+                            pci = d.get("Slot", "-")
+
+                            # В DPDK интерфейсов может быть несколько (разделены запятыми)
+                            iface = d.get("Interface", "")
+                            if not iface or iface == "<none>":
+                                iface = "-"
+
+                            desc = d.get("Device_str", "<Unknown Device>")
+                            if len(desc) > 32:
+                                desc = desc[:29] + "..."
+
+                            driver = d.get("Driver_str", "")
+                            if not driver or driver == "<none>":
+                                driver = "-"
+
+                            # Определяем владельца на основе списков самого DPDK
+                            if driver in Cartouche.dpdk_drivers:
+                                owner = "Userspace (DPDK)"
+                            elif driver != "-":
+                                owner = "Kernel"
+                            else:
+                                owner = "None"
+
+                            print("{:<13} | {:<9} | {:<32} | {:<11} | {}".format(pci, iface, desc, driver, owner))
+                        print(separator)
 
     def do_exit(self, arg):
         if self.context:

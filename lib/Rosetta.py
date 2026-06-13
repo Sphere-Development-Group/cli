@@ -69,3 +69,17 @@ def create_traffic_side_parser(prog_name: str) -> Cmd2ArgumentParser:
 
 source = create_traffic_side_parser("source")
 destination = create_traffic_side_parser("destination")
+
+
+# show
+show = Cmd2ArgumentParser()
+show_sb = show.add_subparsers(dest="command", help="Команда вывода системной информации")
+
+# show candiidate config
+show_candiidate = show_sb.add_parser("candiidate").add_argument("candiidate", type=str, choices=["config"])
+
+# show running config
+show_running = show_sb.add_parser("running").add_argument("running", type=str, choices=["config"])
+
+# show datapath hardware
+show_datapath = show_sb.add_parser("datapath").add_argument("datapath", type=str, choices=["hardware"])

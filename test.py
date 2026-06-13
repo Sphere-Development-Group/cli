@@ -55,6 +55,7 @@ def get_network_status_table():
             owner = "None"
 
         print("{:<13} | {:<9} | {:<32} | {:<11} | {}".format(pci, iface, desc, driver, owner))
+    print(separator)
 
 
 def bind_device(pci_address, driver_name):
