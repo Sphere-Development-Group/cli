@@ -541,7 +541,8 @@ def bind_all(dev_list, driver, force=False):
     global devices
 
     if is_bsd:
-        sys.exit(freebsd_err_unsupported_string)
+        # sys.exit(freebsd_err_unsupported_string)
+        print("error: is_bsd")
 
     try:
         dev_id_from_dev_name(driver)
@@ -555,12 +556,13 @@ def bind_all(dev_list, driver, force=False):
 
     # check if we're attempting to bind to a driver that isn't loaded
     if not module_is_loaded(driver.replace("-", "_")):
-        sys.exit("Error: Driver '%s' is not loaded." % driver)
+        # sys.exit("Error: Driver '%s' is not loaded." % driver)
+        print("Error: Driver '%s' is not loaded." % driver)
 
     try:
         dev_list = map(dev_id_from_dev_name, dev_list)
     except ValueError as ex:
-        sys.exit(ex)
+        print(f"Error: {ex}")
 
     # check for IOMMU support
     if driver == "vfio-pci" and not has_iommu():
@@ -580,7 +582,8 @@ def bind_all(dev_list, driver, force=False):
             try:
                 os.chown(dev_path, vfio_uid, vfio_gid)
             except OSError as err:
-                sys.exit(f"Error: failed to set IOMMU group ownership for {d}: {err}")
+                print(f"Error: failed to set IOMMU group ownership for {d}: {err}")
+                # sys.exit(f"Error: failed to set IOMMU group ownership for {d}: {err}")
 
     if not exists("/sys/bus/pci/devices/%s/driver_override" % d):
         for d in devices.keys():
