@@ -13,9 +13,10 @@ class Cli(cmd2.Cmd):
         # Конфигурации
         self.current_test_id: int = None
         self.current_stream_id: int = None
+        self.current_interface_id: int = None
 
-        self.running_configuration: dict = {"tests": {}}
-        self.candidate_configuration: dict = {"tests": {}}
+        self.running_configuration: dict = {"tests": {}, "system": {}}
+        self.candidate_configuration: dict = {"tests": {}, "system": {}}
 
         self.context_update()
 
@@ -29,6 +30,9 @@ class Cli(cmd2.Cmd):
         test_key = f"test {self.current_test_id}"
         stream_key = f"stream {self.current_stream_id}"
         return self.candidate_configuration["tests"][test_key]["streams"][stream_key]
+
+    def get_current_interface(self):
+        return self.candidate_configuration["system"][f"interface {self.current_interface_id}"]
 
     def format_config(self, config_dict: dict, indent_level: int = 0) -> str:
         lines = []
@@ -54,9 +58,8 @@ class Cli(cmd2.Cmd):
         match arg.command:
             case "candidate":
                 if arg.config == "config":
-                    if not self.candidate_configuration.get("tests"):
+                    if not self.candidate_configuration.get("tests") and not self.candidate_configuration.get("system"):
                         return
-
                     if "stream" in self.context and self.current_test_id and self.current_stream_id:
                         test_key = f"test {self.current_test_id}"
                         stream_key = f"stream {self.current_stream_id}"
@@ -75,9 +78,28 @@ class Cli(cmd2.Cmd):
                     else:
                         print(self.format_config(self.candidate_configuration))
 
-            # case "running":
-            #     if arg.config:
-            #         pass
+            case "running":
+                if arg.config == "config":
+                    if not self.candidate_configuration.get("tests") and not self.candidate_configuration.get("system"):
+                        return
+
+                    if "stream" in self.context and self.current_test_id and self.current_stream_id:
+                        test_key = f"test {self.current_test_id}"
+                        stream_key = f"stream {self.current_stream_id}"
+                        try:
+                            target_data = {test_key: {"streams": {stream_key: self.get_current_stream()}}}
+                            print(self.format_config(target_data))
+                        except KeyError:
+                            print(self.format_config(self.running_configuration))
+                    elif "test" in self.context and self.current_test_id:
+                        test_key = f"test {self.current_test_id}"
+                        try:
+                            target_data = {test_key: self.running_configuration["tests"][test_key]}
+                            print(self.format_config(target_data))
+                        except KeyError:
+                            print(self.format_config(self.running_configuration))
+                    else:
+                        print(self.format_config(self.running_configuration))
 
             case "datapath":
                 if arg.hardware:
@@ -279,6 +301,83 @@ class Cli(cmd2.Cmd):
             pprint(self.candidate_configuration)
         else:
             print("Вы не находитесь в режиме конфигурации stream")
+
+    @cmd2.with_argparser(Rosetta.interface)
+    def do_interface(self, arg):
+        if len(self.context) == 1 and "config" in self.context:
+            system_dict = self.candidate_configuration["system"]
+            self.current_interface_id = arg.id
+            self.context.append("interface")
+            self.context_update()
+
+            interface_key = f"interface {str(self.current_interface_id)}"
+
+            if interface_key not in system_dict:
+                system_dict[interface_key] = {}
+        else:
+            print("Вы не находитесь в режиме конфигурации")
+
+    @cmd2.with_argparser(Rosetta.pci)
+    def do_pci(self, arg):
+        if "interface" in self.context:
+            interface_dict = self.get_current_interface()
+
+            match arg.command:
+                case "address":
+                    interface_dict["pci address"] = str(arg.address).strip()
+        else:
+            print("Вы не находитесь в режиме конфигурации интерфейса")
+
+    @cmd2.with_argparser(Rosetta.driver)
+    def do_driver(self, arg):
+        if "interface" in self.context:
+            interface_dict = self.get_current_interface()
+            interface_dict["driver"] = arg.model
+        else:
+            print("Вы не находитесь в режиме конфигурации интерфейса")
+
+    def do_bind(self, arg):
+        if "interface" in self.context:
+            interface_dict = self.get_current_interface()
+
+            if "pci address" not in interface_dict:
+                print("Не указан pci address")
+                return
+
+            if "driver" not in interface_dict:
+                print("Не указан драйвер NIC")
+                return
+
+            Cartouche.bind_all([interface_dict["pci address"], interface_dict["driver"]], force=False)
+
+    def do_unbind(self, arg):
+        if "interface" in self.context:
+            interface_dict = self.get_current_interface()
+
+            if "pci address" not in interface_dict:
+                print("Не указан pci address")
+                return
+
+            if "driver" not in interface_dict:
+                print("Не указан драйвер NIC")
+                return
+
+            driver = interface_dict["driver"]
+            pci_address = interface_dict["pci address"]
+
+            Cartouche.unbind_all(dev_list=[pci_address], driver=driver, force=False)
+
+    #         if "pci address" in interface_dict:
+    #             if ""
+    #             pci_address = interface_dict["pci address"]
+
+    #                 # Cartouche.bind_all([pci_address], driver_name, force=False)
+
+    #         else:
+    #             print("Не указан pci адресс NIC")
+
+    # unbind_device("0000:03:00.0")
+    # bind_device("0000:03:00.0", "vfio-pci")
 
 
 if __name__ == "__main__":

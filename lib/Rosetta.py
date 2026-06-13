@@ -79,7 +79,23 @@ show_sb = show.add_subparsers(dest="command", help="Команда вывода 
 show_candidate = show_sb.add_parser("candidate", help="").add_argument("config", type=str, choices=["config"])
 
 # # show running config
-# show_running = show_sb.add_parser("running").add_argument("config", type=str, choices=["config"])
+show_running = show_sb.add_parser("running").add_argument("config", type=str, choices=["config"])
 
 # show datapath hardware
 show_datapath = show_sb.add_parser("datapath", help="").add_argument("hardware", type=str, choices=["hardware"])
+
+# interface
+interface = Cmd2ArgumentParser()
+interface.add_argument("id", type=int, help="<int> - Индекс интерфейса в системе")
+
+
+# system
+pci = Cmd2ArgumentParser()
+pci_sb = pci.add_subparsers(dest="command")
+
+pci_address = pci_sb.add_parser("address", help="<0000:xx:xx.x> - PCI адресс NIC")
+pci_address.add_argument("address", type=str, help="<0000:xx:xx.x> - PCI адресс NIC")
+
+
+driver = Cmd2ArgumentParser()
+driver.add_argument("model", choices=["vfio-pci", "igb_uio", "uio_pci_generic"], help="Драйвер NIC")
